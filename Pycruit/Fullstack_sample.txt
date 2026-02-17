@@ -1,0 +1,6 @@
+Django is a high-level Python web framework that encourages rapid development.
+React is a JavaScript library for building user interfaces.
+REST APIs allow communication between client and server.
+JWT stands for JSON Web Token and is used for authentication.
+Full stack development involves frontend and backend technologies.
+SQL databases store structured data in tables.
