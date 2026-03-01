@@ -1,5 +1,6 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from .llm_service import generate_mcqs_with_llm
 from django.utils.timezone import now
 from datetime import timedelta
 from .models import CandidateProfile, InterviewSession, Question
@@ -156,19 +157,42 @@ def generate_mcqs(text, skill):
 @api_view(['POST'])
 def upload_question_file(request):
     file = request.FILES.get('file')
-    skill = request.data.get('skill')
+    domain_name = request.data.get('domain')
 
     if not file:
         return Response({"error": "No file uploaded"}, status=400)
 
+    if not domain_name:
+        return Response({"error": "Domain required"}, status=400)
+
     text = extract_text(file)
-    questions = generate_mcqs(text, skill)
+
+    if not text.strip():
+        return Response({"error": "Empty file"}, status=400)
+
+    mcqs = generate_mcqs_with_llm(text)
+
+    if not mcqs:
+        return Response({"error": "LLM failed to generate questions"}, status=500)
+
+    domain, _ = domain.objects.get_or_create(name=domain_name)
+
+    for item in mcqs:
+        Question.objects.create(
+            domain=domain,
+            text=item["question"],
+            option_a=item["option_a"],
+            option_b=item["option_b"],
+            option_c=item["option_c"],
+            option_d=item["option_d"],
+            correct_answer=item["correct_answer"],
+            weight=1
+        )
 
     return Response({
         "message": "Questions generated successfully",
-        "total_questions": len(questions)
+        "total_questions": len(mcqs)
     })
-
 
 #  GET SECTION QUESTIONS (10 min timer)
 
@@ -249,7 +273,7 @@ def user_score(request):
     })
 
 
-#  SUBMIT INTERVIEW (95% Criteria)
+#  SUBMIT INTERVIEW (85% Criteria)
 
 @api_view(['POST'])
 def submit_interview(request):
@@ -294,7 +318,7 @@ def submit_interview(request):
     session.completed = True
     session.save()
 
-    status = "Proceed to Next Round" if percentage >= 95 else "Not Selected"
+    status = "Proceed to Next Round" if percentage >= 85 else "Not Selected"
 
     return Response({
         "score": round(percentage, 2),

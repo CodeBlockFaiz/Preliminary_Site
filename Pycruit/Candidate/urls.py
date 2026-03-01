@@ -6,7 +6,7 @@ urlpatterns = [
     path("section/", get_section_questions),
     path("submit/", submit_interview),
     path("violation/", report_violation),
-    path('upload/', views.upload_question_file),
+    path('upload/', views.upload_question_file), #llm has been embedded in this end-point.
     path('startassessment/skill/<str:skill>/', views.start_skill_assessment),
     path('login/', views.login_view),
     path('userdetails/', views.user_details),
